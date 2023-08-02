@@ -22,7 +22,7 @@ public:
 
 	}
 		
-	int open(void)
+	int openPort(void)
 	{
         //打开设备
 		serial_fd = open(ttyDevice , O_RDWR| O_NOCTTY|O_NONBLOCK); // O_NONBLOCK 表示非阻塞, 跟O_NDELAY是一样的，表示read时没数据直接返回错误 而不是阻塞   使用 O_NOCTTY 选项，可以避免串口设备成为进程的控制终端，这样可以防止串口的输入输出干扰进程的交互 
@@ -76,9 +76,9 @@ public:
         }
 #endif
 
-        tty.c_cflag | = CLOCAL | CREAD; // CLOCAL：该标志用于表示本地连接  CREAD：该标志用于表示使能串口接收功能
+        tty.c_cflag |= CLOCAL | CREAD; // CLOCAL：该标志用于表示本地连接  CREAD：该标志用于表示使能串口接收功能
 
-        tty.c_cflag &= ~CSIZE; CSIZE //清除 c_cflag 中的 CSIZE 位  #define CSIZE   (CS5 | CS6 | CS7 | CS8)  /* 字符大小掩码 */
+        tty.c_cflag &= ~CSIZE; CSIZE; //清除 c_cflag 中的 CSIZE 位  #define CSIZE   (CS5 | CS6 | CS7 | CS8)  /* 字符大小掩码 */
         tty.c_cflag |= CS8;   // 将 CS8 标志位设置到 c_cflag 中  表示数据位8位
 
         tty.c_cflag &= ~PARENB; //禁用奇偶校验
@@ -98,23 +98,23 @@ public:
 
         tty.c_cc[VTIME] = 0; // 设置为0表示非阻塞等待
 
-        tcflush(serial_fd, TCIOFLUSH) //刷新输入输出缓冲
+        tcflush(serial_fd, TCIOFLUSH); //刷新输入输出缓冲
 
-        if (tcsetattr(fd, TCSANOW, &tty) != 0) {  //设置属性,立即生效  TCSANOW TCSADRAIN：等待所有输出完成后生效  TCSAFLUSH：清空输入输出队列后生效
+        if (tcsetattr(serial_fd, TCSANOW, &tty) != 0) {  //设置属性,立即生效  TCSANOW TCSADRAIN：等待所有输出完成后生效  TCSAFLUSH：清空输入输出队列后生效
             std::cerr << "无法设置串口参数" << std::endl; 
-            close();
+            close(serial_fd);
             return false;
         }
 
         return true;
 	}
 
-	int close(void)
-	{
+	int closePort(void) {
         if (serial_fd != -1) {
             close(serial_fd);
             serial_fd = -1;
         }
+        return 0;
 	}
 
     int getFd() const {
@@ -136,7 +136,7 @@ public:
         }
         return bytes_written;
     }
-}
+};
 
 
 int main() {
